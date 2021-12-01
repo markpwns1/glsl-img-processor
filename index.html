@@ -1,0 +1,41 @@
+<html>
+    <head>
+        <title>Shader Editor</title>
+        <link rel="stylesheet" href="index.css">
+    </head>
+    <body>
+        <div id="setup-pane" class="left-pane">
+            <div id="img-properties">
+                <p>Output image dimensions</p>
+                <input type="text" id="img-dimensions" value="256,256">
+                <button id="update-img-properties">Update</button>
+            </div>
+            <div id="textures">
+                <div id="uploader">
+                    <input type="file" id="file-upload">
+                </div>
+                <div id="texture-list">
+        
+                </div>
+            </div>
+        </div>
+        <div id="editor" class="mid-pane">
+            <textarea id="frag-shader-code" value="">
+varying highp vec2 texcoord;
+
+uniform sampler2D maintex;
+
+void main() {
+    gl_FragColor = texture2D(maintex, texcoord);
+}</textarea>
+        </div>
+        <div id="output" class="right-pane">
+            <button id="reload-btn">Reload</button>
+            <br>
+            <canvas id="glCanvas" width="640" height="480"></canvas>
+        </div>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+        <script src="index.js"></script>
+        <!-- <script src="threejsindex.js" type="module"></script> -->
+    </body>    
+</html>

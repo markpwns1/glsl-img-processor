@@ -1,0 +1,46 @@
+.mid-pane {
+    float: left;
+    width: 50%;
+}
+
+.left-pane {
+    float: left;
+    width: 25%;
+}
+
+.right-pane {
+    float: left;
+    width: 25%;
+}
+
+.thumbnail {
+    width: 100px;
+    height: 100px;
+    margin: auto;
+    display: block;
+}
+
+.texture {
+    width: 100%;
+}
+
+.texture-settings {
+    width: fit-content;
+    margin: auto;
+}
+
+#frag-shader-code {
+    width: 100%;
+    height: 100%;
+}
+
+#img-properties {
+    float: top;
+    height: 15%;
+}
+
+#textures {
+    float: top;
+    height: 80%;
+    overflow: scroll;
+}
