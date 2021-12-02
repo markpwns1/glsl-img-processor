@@ -4,38 +4,64 @@
         <link rel="stylesheet" href="index.css">
     </head>
     <body>
-        <div id="setup-pane" class="left-pane">
-            <div id="img-properties">
-                <p>Output image dimensions</p>
-                <input type="text" id="img-dimensions" value="256,256">
-                <button id="update-img-properties">Update</button>
+        <div id="textures" class="left-pane">
+            <div id="uploader">
+                <h2>Add Texture</h2>
+                <!-- <p>From File</p> -->
+                <input type="file" id="file-upload">
+                <!-- <p>From URL</p>
+                <input type="text" id="file-src-box"> -->
             </div>
-            <div id="textures">
-                <div id="uploader">
-                    <input type="file" id="file-upload">
-                </div>
-                <div id="texture-list">
-        
-                </div>
+            <div id="texture-list">
+                <h2>Textures</h2>
             </div>
         </div>
         <div id="editor" class="mid-pane">
-            <textarea id="frag-shader-code" value="">
+            <div id="frag-shader-code">precision lowp float;
+
 varying highp vec2 texcoord;
 
-uniform sampler2D maintex;
+uniform sampler2D tex0;
 
 void main() {
-    gl_FragColor = texture2D(maintex, texcoord);
-}</textarea>
+    gl_FragColor = texture2D(tex0, texcoord);
+}</div>
         </div>
         <div id="output" class="right-pane">
             <button id="reload-btn">Reload</button>
             <br>
-            <canvas id="glCanvas" width="640" height="480"></canvas>
+            <canvas id="glCanvas" width="256" height="256" style="width: 256px; height: 256px;"></canvas>
+            <div id="img-properties">
+                <p>Output, Viewing Dimensions (width,height)</p>
+                <input type="text" id="output-dimensions" value="256,256">
+                <input type="text" id="view-dimensions" value="256,256">
+            </div>
+            <div id="color-picker">
+                <div id="color-label"></div>
+                <canvas id="color-block" height="150" width="150"></canvas>
+                <canvas id="color-strip" height="150" width="30"></canvas>
+                <br>
+                <textarea id="color-text" readonly="true" rows=2 cols=30>
+
+                </textarea>
+            </div>
         </div>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+        <script src="ace/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="ace/src-noconflict/ext-language_tools.js"></script>
+        <script>
+            ace.require("ace/ext/language_tools");
+            var editor = ace.edit("frag-shader-code");
+            editor.setTheme("ace/theme/textmate");
+            editor.session.setMode("ace/mode/glsl");
+            editor.setOptions({
+                enableBasicAutocompletion: true,
+                enableSnippets: true,
+                enableLiveAutocompletion: true,
+                enableEmmet: true
+            });
+        </script>
         <script src="index.js"></script>
         <!-- <script src="threejsindex.js" type="module"></script> -->
-    </body>    
+    </body>
 </html>
