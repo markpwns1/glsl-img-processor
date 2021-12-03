@@ -396,18 +396,39 @@ function colourPicker() {
     changeColor();
 }
 
+function isNumber(t) {
+    return !isNaN(t);
+}
+
 function updateDimensions(text, real) {
     const dimensions = text.split(",").map(x => x.trim());
     const canvas = $("#glCanvas")[0];
+
+    function isValid() {
+        return dimensions.length == 2 && dimensions.every(x => isNumber(x));
+    }
+
     if(real) {
-        canvas.width = dimensions[0];
-        canvas.height = dimensions[1];
-        sendMessage("Set output dimensions to " + canvas.width + "," + canvas.height);
+        if(isValid()) {
+            canvas.width = dimensions[0];
+            canvas.height = dimensions[1];
+            sendMessage("Set output dimensions to " + canvas.width + "," + canvas.height);
+        }
+        else {
+            $("#output-dimensions").val(canvas.width + "," + canvas.height);
+        }
     }
     else {
-        canvas.style.width = dimensions[0] + 'px';
-        canvas.style.height = dimensions[1] + 'px';
-        sendMessage("Set viewing dimensions to " + dimensions[0] + "," + dimensions[1]);
+        if(isValid()) {
+            canvas.style.width = dimensions[0] + 'px';
+            canvas.style.height = dimensions[1] + 'px';
+            sendMessage("Set viewing dimensions to " + dimensions[0] + "," + dimensions[1]);
+        }
+        else {
+            $("#view-dimensions").val(
+                canvas.style.width.substring(0, canvas.style.width.length - 2) + "," + 
+                canvas.style.height.substring(0, canvas.style.height.length - 2));
+        }
     }
 }
 
@@ -429,18 +450,31 @@ function addTexture(src, srcFilename) {
     $props.text(srcFilename);
     $settings.append($props);
 
+    function updateFilename() {
+        let proposedFilename = $filename.val();
+        if(/[_a-zA-Z][_a-zA-Z0-9]*/.test(proposedFilename)) {
+            textures[filename] = null;
+            let old = filename;
+            filename = proposedFilename;
+            textures[filename] = texture;
+            sendMessage("Renamed texture " + old + " to " + filename);
+            drawScene(gl, programInfo, squareBuffer);
+        }
+        else {
+            $filename.val(filename);
+        }
+    }
+
     const $filename = $("<input type='text'>");
     $filename.val(filename);
     $filename.on("keypress", e => {
         if(e.which == 13) {
-            textures[filename] = null;
-            let old = filename;
-            filename = $filename.val();
-            textures[filename] = texture;
-            sendMessage("Renamed texture " + old + " to " + filename);
-            // reloadShader();
-            drawScene(gl, programInfo, squareBuffer);
+            updateFilename();
         }
+    });
+    
+    $filename.focusout(() => {
+        updateFilename();
     });
 
     $settings.append($filename);
@@ -513,11 +547,21 @@ window.onload = () => {
         }
     });
 
+    $("#output-dimensions").focusout(function() {
+        updateDimensions(this.value, true);
+        drawScene(gl, programInfo, squareBuffer);
+    });
+
     $("#view-dimensions").on("keypress", function(e) {
         if(e.which == 13) {
             updateDimensions(this.value, false);
             drawScene(gl, programInfo, squareBuffer);
         }
+    });
+
+    $("#view-dimensions").focusout(function() {
+        updateDimensions(this.value, false);
+        drawScene(gl, programInfo, squareBuffer);
     });
 
     $messages = $("#msg-textarea");
