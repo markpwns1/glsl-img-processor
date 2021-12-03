@@ -16,6 +16,7 @@ void main() {
 let gl;
 let squareBuffer;
 let programInfo;
+let $messages;
 
 let textures = { };
 
@@ -42,7 +43,7 @@ function initShaderProgram(gl, vsSource, fsSource) {
     // If creating the shader program failed, alert
   
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+        sendMessage('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
         return null;
     }
   
@@ -73,7 +74,7 @@ function loadShader(gl, type, source) {
     // See if it compiled successfully
   
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+        sendMessage('An error occurred compiling the shaders: \n' + gl.getShaderInfoLog(shader).trim());
         gl.deleteShader(shader);
         return null;
     }
@@ -185,6 +186,7 @@ function drawScene(gl, programInfo, buffers) {
         const vertexCount = 4;
         gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
     }
+
 }
   
 
@@ -224,6 +226,7 @@ function reloadShader() {
             textureCoord: gl.getAttribLocation(shaderProgram, 'v_texcoord'),
         }
     };
+    return shaderProgram;
 }
 
 //
@@ -303,7 +306,6 @@ function colourPicker() {
     let y = height1;
     let drag = false;
     let dragStrip = false;
-    let colourText = "255, 0, 0";
     let rgbaColor = 'rgba(255,0,0,1)';
 
     ctx1.rect(0, 0, width1, height1);
@@ -400,10 +402,12 @@ function updateDimensions(text, real) {
     if(real) {
         canvas.width = dimensions[0];
         canvas.height = dimensions[1];
+        sendMessage("Set output dimensions to " + canvas.width + "," + canvas.height);
     }
     else {
-        canvas.style.width  = dimensions[0] + 'px';
+        canvas.style.width = dimensions[0] + 'px';
         canvas.style.height = dimensions[1] + 'px';
+        sendMessage("Set viewing dimensions to " + dimensions[0] + "," + dimensions[1]);
     }
 }
 
@@ -420,7 +424,6 @@ function addTexture(src, srcFilename) {
     $container.append($img);
 
     const $settings = $("<div class='texture-settings'></div>");
-    $settings.append("<br>");
 
     const $props = $("<p class='texture-props'></p>");
     $props.text(srcFilename);
@@ -431,8 +434,10 @@ function addTexture(src, srcFilename) {
     $filename.on("keypress", e => {
         if(e.which == 13) {
             textures[filename] = null;
+            let old = filename;
             filename = $filename.val();
             textures[filename] = texture;
+            sendMessage("Renamed texture " + old + " to " + filename);
             // reloadShader();
             drawScene(gl, programInfo, squareBuffer);
         }
@@ -444,6 +449,7 @@ function addTexture(src, srcFilename) {
     $delete.click(() => {
         textures[filename] = null;
         $container.remove();
+        sendMessage("Deleted texture " + filename);
         drawScene(gl, programInfo, squareBuffer);
     });
 
@@ -460,8 +466,10 @@ function addTexture(src, srcFilename) {
         
         $("#texture-list").append($container);
 
+        sendMessage("Uploaded texture " + srcFilename + " as " + filename);
         drawScene(gl, programInfo, squareBuffer);
     }, () => {
+        sendMessage("Failed to upload image " + srcFilename);
         alert("Could not load image.");
     });
 }
@@ -469,6 +477,11 @@ function addTexture(src, srcFilename) {
 function getFilename(path) {
     path = path.replace(/\\/gi, "/");
     return path.substring(path.lastIndexOf("/") + 1);
+}
+
+function sendMessage(text) {
+    $messages.append(text + "\n");
+    $messages.scrollTop($messages[0].scrollHeight);
 }
 
 window.onload = () => {
@@ -489,6 +502,7 @@ window.onload = () => {
     $("#reload-btn").click(() => {
         reloadShader();
         drawScene(gl, programInfo, squareBuffer);
+        sendMessage("Regenerated output texture");
         // console.log($("#frag-shader-code").val());
     });
 
@@ -501,10 +515,12 @@ window.onload = () => {
 
     $("#view-dimensions").on("keypress", function(e) {
         if(e.which == 13) {
-            updateDimensions(this.value, true);
+            updateDimensions(this.value, false);
             drawScene(gl, programInfo, squareBuffer);
         }
     });
+
+    $messages = $("#msg-textarea");
 
     main();
 

@@ -43,6 +43,7 @@ p {
     width: 100px;
     height: 100px;
     margin: auto;
+    margin-bottom: 0px;
     display: block;
 }
 
@@ -60,16 +61,18 @@ p {
 
 .texture {
     width: 100%;
+    margin-bottom: 10px;
 }
 
 .texture-settings {
     width: fit-content;
     margin: auto;
+    margin-top: 0px;
 }
 
 #frag-shader-code {
     width: 100%;
-    height: 100%;
+    height: 80%;
 }
 
 #textures {
@@ -108,3 +111,18 @@ p {
     margin: auto;
     margin-top: 25px;
 }
+
+#msg-textarea {
+    width: 100%;
+    margin: 0px;
+    height: 20%;
+}
+
+#color-block:hover {
+    cursor: crosshair;
+}
+
+#color-strip:hover {
+    cursor: crosshair;
+}
+
