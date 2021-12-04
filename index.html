@@ -29,7 +29,9 @@ void main() {
 <textarea id="msg-textarea" readonly="true" rows="5"></textarea>
         </div>
         <div id="output" class="right-pane">
-            <button id="reload-btn">Reload</button>
+            <button id="reload-btn">Regenerate</button>
+            <button id="save-btn">Save Project</button>
+            <button id="load-btn">Load Project</button>
             <br>
             <canvas id="glCanvas" width="256" height="256" style="width: 256px; height: 256px;"></canvas>
             <div id="img-properties">
@@ -50,6 +52,8 @@ void main() {
         <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
         <script src="ace/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
         <script src="ace/src-noconflict/ext-language_tools.js"></script>
+        <script src="FileSaver.js"></script>
+        <script src="jszip.min.js"></script>
         <script>
             ace.require("ace/ext/language_tools");
             var editor = ace.edit("frag-shader-code");

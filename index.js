@@ -122,6 +122,10 @@ function initBuffers(gl) {
     };
 }
 
+/**
+ * 
+ * @param {WebGLRenderingContext} gl 
+ */
 function drawScene(gl, programInfo, buffers) {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
@@ -175,11 +179,17 @@ function drawScene(gl, programInfo, buffers) {
         gl.activeTexture(gl.TEXTURE0 + i);
 
         // Bind the texture to texture unit 0
-        gl.bindTexture(gl.TEXTURE_2D, textures[key]);
+        if(textures[key])
+            gl.bindTexture(gl.TEXTURE_2D, textures[key].texture);
+        else 
+            gl.bindTexture(gl.TEXTURE_2D, null);
 
         // Tell the shader we bound the texture to texture unit 0
         gl.uniform1i(gl.getUniformLocation(programInfo.program, key), i);
     }
+    
+    const canvas = $("#glCanvas")[0];
+    gl.uniform2f(gl.getUniformLocation(programInfo.program, "output_size"), canvas.width, canvas.height);
 
     {
         const offset = 0;
@@ -189,7 +199,6 @@ function drawScene(gl, programInfo, buffers) {
 
 }
   
-
 function main() {
 
     colourPicker();
@@ -274,7 +283,7 @@ function loadTexture(gl, url, onLoaded, onFailed) {
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         }
 
-        onLoaded(texture);
+        onLoaded(texture, image);
     };
 
     image.onerror = onFailed;
@@ -400,6 +409,18 @@ function isNumber(t) {
     return !isNaN(t);
 }
 
+function setOutputDimensions(width, height) {
+    const canvas = $("#glCanvas")[0];
+    canvas.width = width;
+    canvas.height = height;
+}
+
+function setViewDimensions(width, height) {
+    const canvas = $("#glCanvas")[0];
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+}
+
 function updateDimensions(text, real) {
     const dimensions = text.split(",").map(x => x.trim());
     const canvas = $("#glCanvas")[0];
@@ -434,11 +455,12 @@ function updateDimensions(text, real) {
 
 let texNo = 0;
 
-function addTexture(src, srcFilename) {
+function addTexture(src, srcFilename, name) {
     const $container = $("<div class='texture'></div>");
 
     let texture;
-    let filename = "tex" + (texNo++);
+    let filename = name || ("tex" + (texNo++));
+    let img;
     
     const $img = $("<img class='thumbnail'></img>");
     $img.attr("src", src);
@@ -450,13 +472,22 @@ function addTexture(src, srcFilename) {
     $props.text(srcFilename);
     $settings.append($props);
 
+    function texInfo() {
+        return {
+            filename: filename,
+            srcFilename: srcFilename,
+            texture: texture,
+            image: img
+        }
+    }
+
     function updateFilename() {
         let proposedFilename = $filename.val();
         if(/[_a-zA-Z][_a-zA-Z0-9]*/.test(proposedFilename)) {
             textures[filename] = null;
             let old = filename;
             filename = proposedFilename;
-            textures[filename] = texture;
+            textures[filename] = texInfo();
             sendMessage("Renamed texture " + old + " to " + filename);
             drawScene(gl, programInfo, squareBuffer);
         }
@@ -489,11 +520,11 @@ function addTexture(src, srcFilename) {
 
     $settings.append($delete);
 
-    loadTexture(gl, src, t => {
+    loadTexture(gl, src, (t, i) => {
         texture = t;
-        textures[filename] = texture;
-        const img = $img[0];
-        $props.html(srcFilename + "<br>size: " + img.naturalWidth + "," + img.naturalHeight);
+        img = i;
+        textures[filename] = texInfo();
+        $props.html(srcFilename + "<br>size: " + img.width + "," + img.height);
         // reloadShader();
         
         $container.append($settings);
@@ -514,8 +545,18 @@ function getFilename(path) {
 }
 
 function sendMessage(text) {
+    console.log(text);
     $messages.append(text + "\n");
     $messages.scrollTop($messages[0].scrollHeight);
+}
+
+function imageToBlob(img, onComplete) {
+    var canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    canvas.toBlob(onComplete);
 }
 
 window.onload = () => {
@@ -565,6 +606,113 @@ window.onload = () => {
     });
 
     $messages = $("#msg-textarea");
+
+    $("#save-btn").click(() => {
+        const zip = new JSZip();
+        zip.file("frag.glsl", editor.getValue());
+        const textureFolder = zip.folder("textures");
+
+        const canvas = $("#glCanvas")[0];
+
+        const project = { 
+            outputWidth: canvas.width,
+            outputHeight: canvas.height,
+            viewWidth: parseInt(canvas.style.width.substring(0, canvas.style.width.length - 2)),
+            viewHeight: parseInt(canvas.style.height.substring(0, canvas.style.height.length - 2)),
+            textures: { }
+        };
+
+        const keys = Object.keys(textures);
+        let toExport = keys.length;
+        // console.log(toExport);
+
+        function save() {
+            zip.file("project.json", JSON.stringify(project, null, 2));
+            zip.generateAsync({type:"blob"})
+            .then(blob => {
+                saveAs(blob, "project.zip");
+            });
+        }
+
+        for (const key of keys) {
+            const tex = textures[key];
+
+            if (!tex) {
+                toExport--;
+                continue;
+            };
+
+            project.textures[tex.filename] = tex.srcFilename;
+            imageToBlob(tex.image, blob => {
+                textureFolder.file(tex.srcFilename, blob);
+                toExport--;
+                // console.log(toExport);
+                if(toExport < 1) {
+                    save();
+                }
+            });
+        }
+    });
+
+    $("#load-btn").click(() => {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.onchange = e => { 
+            JSZip.loadAsync(e.target.files[0]).then(zip => {
+                sendMessage("Loading project...");
+
+                if(zip.file("frag.glsl")) {
+                    zip.file("frag.glsl").async("text").then(txt => {
+                        editor.setValue(txt);
+                        sendMessage("Loaded shader file");
+                    }); 
+                } else sendMessage("Missing frag.glsl");
+
+                if(zip.file("project.json")) {
+                    zip.file("project.json").async("text").then(txt => {
+                        const project = JSON.parse(txt);
+                        setOutputDimensions(project.outputWidth, project.outputHeight);
+                        setViewDimensions(project.viewWidth, project.viewHeight);
+                        const keys = Object.keys(project.textures);
+                        let remaining = keys.length;
+                        // console.log(remaining);
+                        for (const tex of keys) {
+                            const path = project.textures[tex];
+
+                            if(!path) {
+                                remaining--;
+                                continue;
+                            }
+
+                            if(!zip.file("textures/" + path)) {
+                                remaining--;
+                                sendMessage("Could not find textures/" + path);
+                                if(remaining < 1) {
+                                    sendMessage("Finished loading project");
+                                }
+                                continue;
+                            }
+
+                            zip.file("textures/" + path).async("blob").then(blob => {
+                                const src = URL.createObjectURL(blob);
+                                addTexture(src, path, tex);
+                                remaining--;
+                                console.log(remaining);
+                                if(remaining < 1) {
+                                    reloadShader();
+                                    drawScene(gl, programInfo, squareBuffer);
+                                    sendMessage("Finished loading project");
+                                }
+                            });
+                        }
+                    });
+                } else sendMessage("Missing project.json\nFinished loaded project");
+            }).catch(() => {
+                alert("Could not load file.");
+            });
+        }
+        input.click();
+    });
 
     main();
 
