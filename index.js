@@ -472,12 +472,20 @@ function addTexture(src, srcFilename, name) {
     $props.text(srcFilename);
     $settings.append($props);
 
+    function deleteTexture() {
+        textures[filename] = null;
+        $container.remove();
+        sendMessage("Deleted texture " + filename);
+        drawScene(gl, programInfo, squareBuffer);
+    }
+
     function texInfo() {
         return {
             filename: filename,
             srcFilename: srcFilename,
             texture: texture,
-            image: img
+            image: img,
+            destroy: deleteTexture
         }
     }
 
@@ -511,12 +519,7 @@ function addTexture(src, srcFilename, name) {
     $settings.append($filename);
 
     const $delete = $("<button>X</button>");
-    $delete.click(() => {
-        textures[filename] = null;
-        $container.remove();
-        sendMessage("Deleted texture " + filename);
-        drawScene(gl, programInfo, squareBuffer);
-    });
+    $delete.click(deleteTexture);
 
     $settings.append($delete);
 
@@ -675,6 +678,12 @@ window.onload = () => {
                         setViewDimensions(project.viewWidth, project.viewHeight);
                         updateDimensions("", true);
                         updateDimensions("", false);
+
+                        for (const key in textures) {
+                            textures[key].destroy();
+                        }
+                        textures = { };
+
                         const keys = Object.keys(project.textures);
                         let remaining = keys.length;
                         // console.log(remaining);
