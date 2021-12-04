@@ -673,6 +673,8 @@ window.onload = () => {
                         const project = JSON.parse(txt);
                         setOutputDimensions(project.outputWidth, project.outputHeight);
                         setViewDimensions(project.viewWidth, project.viewHeight);
+                        updateDimensions("", true);
+                        updateDimensions("", false);
                         const keys = Object.keys(project.textures);
                         let remaining = keys.length;
                         // console.log(remaining);
